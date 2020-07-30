@@ -1,0 +1,60 @@
+---
+title: "Association Analysis"
+author: "Tom_Kinyanjui_Njoroge"
+date: "July 25, 2020"
+output: html_document
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Defining the question 
+To Come up with a strategy to increase sales in Carrefour . 
+
+## Metric of Success
+Find out relationships between Items provided
+
+#Reading the data
+```{r}
+library(arules)
+transaction <- read.csv("file:///C:/Users/HP/Downloads/Supermarket_Sales_Dataset II (1).csv",sep=",")
+head(transaction)
+```
+# Check the Data
+```{r}
+#dtypes
+class(transaction)
+```
+
+```{r}
+# size of the first 5 transactions 
+size(head(transaction, 5))
+```
+
+```{r}
+# Transaction summary 
+summary(transaction)
+```
+
+```{r}
+# Most common items
+library(RColorBrewer)
+itemFrequencyPlot(transaction, topN= 10, col=brewer.pal(10,'Set1'),main="Item Frequency Plot")
+itemFrequencyPlot(transaction, support= 0.1, col=brewer.pal(10,'Set1'),main="Items Importance")
+```
+
+# Implement the Solution
+```{r}
+# min_supp -> 0.001
+# confidence -> 0.8
+rules <- apriori(transaction, parameter = list(supp=0.001, conf=0.75))
+rules
+summary(rules)
+inspect(rules[1:5])
+```
+
+```{r }
+rules<-sort(rules, by="confidence", decreasing=TRUE)
+inspect(rules[1:10])
+```
+Frequest transaction were upto 5 items 

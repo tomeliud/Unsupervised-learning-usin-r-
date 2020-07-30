@@ -1,0 +1,155 @@
+---
+title: "Marketing Strategies - CarreFour"
+author: "Tom_Kinyanjui_Njoroge"
+date: "July 25, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Defining the question 
+To come up with factual information on which marketing strategies carrefour should adopt based on the the analysis of the provided data.
+
+##Metric of Success
+Build a model that will analyze on the relevant marketing strategies to be adopted by the organization 
+
+# loading the data
+```{r}
+# Data for Analysis, Dimension Reduction and Feature Selection
+sales <- read.csv("file:///C:/Users/HP/Downloads/Supermarket_Dataset_1 - Sales Data.csv")
+head(sales)
+```
+
+# Check the Data
+```{r}
+dim(sales)
+```
+
+```{r}
+#Unique value counts
+table(sales$Branch)
+table(sales$Customer.type)
+table(sales$Gender)
+table(sales$Product.line)
+table(sales$Payment)
+#Convert to Factor
+library(dplyr)
+sales <- mutate_at(sales, vars(Branch, Customer.type,Gender,Product.line,Payment), as.factor)
+str(sales)
+```
+
+# Data Cleaning
+```{r}
+# Droppig irrerevant column
+sales_new <- sales[,-1]
+head(sales_new)
+```
+
+```{r}
+lower <- function(x) {
+    colnames(x) <- tolower(colnames(x))
+    x
+}
+sales_new <- lower(sales_new)
+head(sales_new)
+```
+
+```{r}
+colSums(is.na(sales_new))
+```
+
+```{r}
+sales_new <- unique(sales_new)
+dim(sales_new)
+```
+
+```{r}
+#Outliers
+num_col <- sales_new[, c(5,6,7,11,12,13,14,15)]
+outlier = function(x){
+  for(i in colnames(x)){
+    boxplot(sales_new[[i]], xlab=i, main=paste0("Boxplot for ",i))
+  }
+}
+outlier(num_col)
+```
+
+
+```{r}
+#remove outliers 
+outlier_replace <- function(x){
+   qnt <- quantile(x, probs=c(.25, .75), na.rm = T)
+   caps <- quantile(x, probs=c(.05, .95), na.rm = T)
+   H <- 1.5 * IQR(x, na.rm = T)
+   x[x < (qnt[1] - H)] <- caps[1]
+   x[x > (qnt[2] + H)] <- caps[2]
+   return(x)}
+sales_new$tax <-outlier_replace(sales_new$tax)
+sales_new$cogs <- outlier_replace(sales_new$cogs)
+sales_new$gross.income <- outlier_replace(sales_new$gross.income)
+sales_new$total <- outlier_replace(sales_new$total)
+outlier(num_col)
+```
+
+# EDA
+## Univariate
+```{r}
+library(Hmisc)
+describe(num_col)
+```
+
+```{r Histogram}
+histogram = function(x){
+  for(i in colnames(x)){
+    hist(sales_new[[i]], breaks = 10,main =i,xlab = i,col = "dodgerblue")
+  }
+}
+histogram(num_col)
+```
+
+## Bivariate
+
+```{r}
+#correlation 
+corr <- sales_new[, c(-1,-2,-3,-4,-8,-9,-10,-12)]
+correlation_matrix <- cor(corr)
+library(corrplot)
+corr_data <- as.data.frame(correlation_matrix)
+corr_data
+corr <- corrplot(correlation_matrix, method = "shade",order = "hclust", col=colorRampPalette(c("yellow","green","navyblue"))(100), addgrid.col="gray", tl.col = "black", tl.cex = 0.7,tl.srt = 45)
+```
+
+```{r}
+#scatter plot
+plot(sales_new$gross.income, sales_new$cogs, main = "Relationship between COGS and Gross Income", xlab="Gross Income", ylab="COGS")
+plot(sales_new$total, sales_new$gross.income, main = "Total Sales vs. Gross Income ", xlab = "Total Sales", ylab = "Gross Income")
+plot(sales_new$total, sales_new$rating, main = "Total Sales vs. Rating", xlab = "Total Sales", ylab = "Rating")
+```
+# Implement the Solution
+#Using PCA 
+```{r}
+pred <- sales_new[, c(-1,-2,-3,-4,-8,-9,-10,-12,-15)]
+sales.pca <- prcomp(pred, scale. = TRUE, center = TRUE)
+summary(sales.pca)
+label <- sales_new[, "total"]
+library(ggbiplot)
+ggbiplot(sales.pca, obs.scale = 1.2,var.scale=1.3)
+ggbiplot(sales.pca, choices = c(3,4) ,obs.scale = 1.2, var.scale = 1.3)
+```
+
+## Feature Selection
+```{r}
+library(caret)
+correlation = cor(pred)
+highly <- findCorrelation(correlation, cutoff = 0.75)
+# highly correlated variables
+names(pred[,highly])
+# Dataset without the Highly Correlated
+new_df <- pred[-highly]
+
+par(mfrow = c(1, 2))
+corrplot(correlation, order = "hclust",tl.col = "black", tl.cex = 0.7)
+corrplot(cor(sales_new1), order = "hclust",tl.col = "black", tl.cex = 0.7)
+```

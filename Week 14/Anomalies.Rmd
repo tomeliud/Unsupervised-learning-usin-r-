@@ -1,0 +1,50 @@
+---
+title: "Anomalies detection"
+author: "Tom_Kinyanjui_Njoroge"
+date: "July 25, 2020"
+output: html_document
+---
+# Defining the question 
+To find out whether there are any anomalies in our data 
+
+# Reading the data 
+```{r}
+sales <- read.csv("file:///C:/Users/HP/Downloads/Supermarket_Sales_Forecasting - Sales.csv")
+head(sales)
+```
+
+
+# Check the Data
+```{r}
+anyNA(sales)
+colSums(is.na(sales))
+```
+
+```{r}
+# Convert the data to Tibble
+library(tidyverse)
+library(tibbletime)
+sales$Date <- as.Date(sales$Date, "%m/%d/%Y")
+sales_ts = sales %>%
+  as.tibble() %>%
+  as_tbl_time(Date) %>%
+  arrange(Date) %>%
+  as_period("daily")
+```
+
+
+
+# Implement the Solution
+```{r}
+#checking for anomalies 
+library(anomalize)
+sales_anomaly <- sales_ts %>%
+  time_decompose(Sales) %>% 
+  anomalize(remainder,max_anoms = 0.2, alpha=0.05) %>%
+  time_recompose() %>% glimpse()
+sales_anomaly %>% plot_anomalies(time_recomposed = TRUE)
+
+```
+
+
+There is are no Anomalies in our Sales Data 
